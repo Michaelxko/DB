@@ -1,22 +1,20 @@
 import customtkinter as ctk
 from tkinter import messagebox
 import subprocess
+import os
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
-subprocess.run(["python", "DB.py"])
+current_directory = os.path.dirname(os.path.abspath(__file__))
+db_script_path = os.path.join(current_directory, "DB.py")
+linkgen_script_path = os.path.join(current_directory, "linkgen.py")
 
-def confirm_execution():
-    dialog = ctk.CTk()
-    dialog.withdraw()  
+try:
+    subprocess.run(["python", db_script_path])
+    
+    if messagebox.askyesno("Confirmation", "Wait for the Excel to open and select a Conection, Did you select a connection?"):
+        subprocess.run(["python", linkgen_script_path])
 
-    confirmed = messagebox.askyesno("Confirmation", "Wait for the Excel to open and select a Conection, Did you select a connection?")
-
-    dialog.destroy()
-
-    return confirmed
-
-if confirm_execution():
-    import subprocess
-    subprocess.run(["python", "linkgen.py"])
+except Exception as e:
+    print("An error occurred:", e)

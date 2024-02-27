@@ -8,6 +8,12 @@ import os
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
+def get_custom_entry(frame):
+    entry_var = StringVar()
+    entry = ctk.CTkEntry(frame, textvariable=entry_var, placeholder_text="Custom")
+    entry.pack(side='left')
+    return entry_var
+
 def get_all_inputs():
     root = ctk.CTk()
     root.withdraw()
@@ -15,6 +21,12 @@ def get_all_inputs():
     def on_submit():
         selected_origins = [origin for origin, var in origins_vars.items() if var.get()]
         selected_destinations = [destination for destination, var in destinations_vars.items() if var.get()]
+
+        if custom_origin_var.get():
+            selected_origins.append(custom_origin_var.get())
+
+        if custom_destination_var.get():
+            selected_destinations.append(custom_destination_var.get())
 
         if not selected_origins or not selected_destinations:
             messagebox.showerror("Error", "Please select at least one origin and one destination.", parent=dialog)
@@ -42,7 +54,7 @@ def get_all_inputs():
 
     dialog = ctk.CTkToplevel()
     dialog.title("Travel Information")
-    dialog.geometry("320x650")  # Adjust size for additional options
+    dialog.geometry("320x730")  # Adjust size for additional options
 
     inputs = {}
     
@@ -65,11 +77,15 @@ def get_all_inputs():
     for origin, var in origins_vars.items():
         ctk.CTkCheckBox(origin_frame, text=origin, variable=var).pack(anchor='w', pady=5)
 
+    custom_origin_var = get_custom_entry(origin_frame)
+
     # Destination selection
     ctk.CTkLabel(destination_frame, text="Select Stations:").pack(side='top', pady=5)
     destinations_vars = {destination: BooleanVar(value=False) for destination in ["Solingen Hbf", "Köln Hbf", "Köln Messe/Deutz"]}
     for destination, var in destinations_vars.items():
         ctk.CTkCheckBox(destination_frame, text=destination, variable=var).pack(anchor='w', pady=5)
+
+    custom_destination_var = get_custom_entry(destination_frame)
 
     # Date entry
     ctk.CTkLabel(date_frame, text="Fahrdaten:").pack(side='top')
@@ -153,6 +169,8 @@ def scrape_data_and_append_to_csv(url, origin, destination, csv_path):
     else:
         print(f"No table found for URL: Origin: {origin} - Destination: {destination}")
 
+import pandas as pd
+
 def convert_csv_to_excel(csv_path, excel_path, user_inputs):
     column_names = ["Abfahrt", "Ankunft", "Fahrzeit", "Umstiege", "VIA", "Mit", "Preis", "Von", "Bis"]
     df = pd.read_csv(csv_path, header=None, names=column_names)
@@ -162,10 +180,13 @@ def convert_csv_to_excel(csv_path, excel_path, user_inputs):
     df_zeit_abfahrt = df.sort_values(by="Abfahrt")
     df_zeit_ankunft = df.sort_values(by="Ankunft")
 
-    df['Preis'] = pd.to_numeric(df['Preis'].str.replace(',', '.').str.extract('(\d+.\d+)')[0], errors='coerce')
+    df['Preis'] = pd.to_numeric(df['Preis'].str.replace(',', '.').str.extract(r'(\d+\.\d+)')[0], errors='coerce')
     df_preis = df.sort_values(by="Preis")
 
     inputs_df = pd.DataFrame([user_inputs], columns=['traveler', 'date', 'departure', 'arrival'])
+
+    link_df = pd.DataFrame(columns=column_names)
+    link_df.loc[1, 'Date'] = user_inputs['date']  # Set the date in the second row under the "Date" column
 
     with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
         df_abfahrt.to_excel(writer, index=False, sheet_name="Abfahrt Ort")
@@ -173,9 +194,9 @@ def convert_csv_to_excel(csv_path, excel_path, user_inputs):
         df_preis.to_excel(writer, index=False, sheet_name="Preis")
         df_zeit_abfahrt.to_excel(writer, index=False, sheet_name="Abfahrt Zeit")
         df_zeit_ankunft.to_excel(writer, index=False, sheet_name="Ankunft Zeit")
+        link_df.to_excel(writer, index=False, sheet_name="Link Generator")
         inputs_df.to_excel(writer, index=False, sheet_name='User Inputs')
-
-        
+    
 
 def delete_csv_file(csv_path):
     try:
@@ -209,8 +230,9 @@ def main():
         origins = selected_origins
         destinations = selected_destinations
 
-    csv_path = r"\\imvsfile\RedirectedUserFolders$\mk\Documents\Visual Studios\DB\data.csv"
-    excel_path = r"\\imvsfile\RedirectedUserFolders$\mk\Documents\Visual Studios\DB\fahrten.xlsx"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_path = os.path.join(script_dir, "data.csv")
+    excel_path = os.path.join(script_dir, "fahrten.xlsx")
 
     links = create_bahn_guru_links(origins, destinations, date, departure_after, arrival_before, duration=4, max_changes=1)
 
@@ -220,5 +242,8 @@ def main():
     convert_csv_to_excel(csv_path, excel_path, user_inputs)
     delete_csv_file(csv_path)
 
+    return excel_path
+
 if __name__ == "__main__":
-    main()
+    excel_path = main()
+    os.system(f'start excel "{excel_path}"')    

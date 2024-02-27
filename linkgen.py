@@ -16,7 +16,7 @@ station_details = {
         "x": "7004188",
         "y": "51160766"
     },
-    "Frankfurt(M) Flughafen Fernbf": {
+    "FRA Frankfurt Airport": {
         "name": "Frankfurt(M) Flughafen Fernbf",
         "id": "8070003",
         "x": "8570181",

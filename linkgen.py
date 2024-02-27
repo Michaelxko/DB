@@ -2,6 +2,8 @@ import urllib.parse
 import pandas as pd
 from datetime import datetime
 import webbrowser
+import time
+import os
 
 station_details = {
     "Darmstadt Hbf": {
@@ -75,7 +77,12 @@ def create_db_link(station_details, start_station, destination_station, date, ti
     
     return base_url + params_encoded
 
-df = pd.read_excel("fahrten.xlsx", sheet_name="Link Generator")
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+excel_file_path = os.path.join(script_dir, "fahrten.xlsx")
+
+df = pd.read_excel(excel_file_path, sheet_name="Link Generator")
 
 start_station = df.iloc[0]["Von"]
 destination_station = df.iloc[0]["Bis"]
@@ -88,3 +95,4 @@ db_link = create_db_link(station_details, start_station, destination_station, da
 print("Generated URL:", db_link)
 
 webbrowser.open(db_link)
+

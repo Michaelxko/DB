@@ -13,7 +13,7 @@ linkgen_script_path = os.path.join(current_directory, "linkgen.py")
 try:
     subprocess.run(["python", db_script_path])
     
-    if messagebox.askyesno("Confirmation", "Wait for the Excel to open and select a Conection, Did you select a connection?"):
+    if messagebox.askyesno("Confirmation", "Did you copy a Connection and save the excel file?"):
         subprocess.run(["python", linkgen_script_path])
 
 except Exception as e:
